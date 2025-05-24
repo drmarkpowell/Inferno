@@ -12,7 +12,7 @@ using namespace metal;
 /// Reference: https://en.wikipedia.org/wiki/HSL_and_HSV
 /// - Parameter rgb: A vector representing a color with components (R, G, B).
 /// - Returns: A vector representing a color with components (H, S, L).
-half3 rgbToHSL(half3 rgb) {
+half3 rgb2HSL(half3 rgb) {
     half min = min3(rgb.r, rgb.g, rgb.b);
     half max = max3(rgb.r, rgb.g, rgb.b);
     half delta = max - min;
@@ -42,7 +42,7 @@ half3 rgbToHSL(half3 rgb) {
 /// Reference: https://en.wikipedia.org/wiki/HSL_and_HSV
 /// - Parameter hsl: A vector representing a color with components (H, S, L).
 /// - Returns: A vector representing a color with components (R, G, B).
-half3 hslToRGB(half3 hsl) {
+half3 hsl2RGB(half3 hsl) {
     half c = (1.0h - abs(2.0h * hsl[2] - 1.0h)) * hsl[1];
     half h = hsl[0] * 6.0h;
     half x = c * (1.0h - abs(fmod(h, 2.0h) - 1.0h));
@@ -81,13 +81,13 @@ half3 hslToRGB(half3 hsl) {
 /// - Parameter gradientWidth: The width of the shimmer gradient in UV space.
 /// - Parameter maxLightness: The maximum lightness at the peak of the gradient.
 /// - Returns: The new pixel color.
-[[ stitchable ]] half4 shimmer2(float2 position, half4 color, float2 size, float time, float animationDuration, float delay, float gradientWidth, float maxLightness) {
+[[ stitchable ]] half4 slowshimmer(float2 position, half4 color, float2 size, float time, float animationDuration, float delay, float gradientWidth, float maxLightness) {
     if (color.a == 0.0h) {
         return color;
     }
     
     // Calculate the current progress of the shimmer animation loop, from 0 to 1
-    float loopedProgress = fmod(time, float(animationDuration));
+    float loopedProgress = fmod(time, float(animationDuration + delay));
     half progress = loopedProgress / animationDuration;
     
     // Convert coordinate to UV space, 0 to 1.
@@ -108,11 +108,11 @@ half3 hslToRGB(half3 hsl) {
         half intensity = sin(gradient * M_PI_H);
 
         // Convert from RGB to HSL
-        half3 hsl = rgbToHSL(color.rgb);
+        half3 hsl = rgb2HSL(color.rgb);
         // Modify the lightness component based on intensity
         hsl[2] = hsl[2] + half(maxLightness * (maxLightness > 0.0h ? 1 - hsl[2] : hsl[2])) * intensity;
         // Convert back to RGB
-        color.rgb = hslToRGB(hsl);
+        color.rgb = hsl2RGB(hsl);
     }
     
     return color;
